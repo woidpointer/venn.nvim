@@ -29,6 +29,33 @@ Usage
 
 * Invoke `:VBox`. This will draw a rectangle. In case, it has a width or a height of 1, it will draw a line.
 
+Line styles
+-----------
+
+venn.nvim can draw boxes and lines in several Unicode box-drawing styles:
+
+| Style          | Command    | Draw-over   | Example      |
+|----------------|------------|-------------|--------------|
+| `single`       | `:VBox`    | `:VBoxO`    | `┌─┐ │ └─┘`   |
+| `double`       | `:VBoxD`   | `:VBoxDO`   | `╔═╗ ║ ╚═╝`   |
+| `heavy`        | `:VBoxH`   | `:VBoxHO`   | `┏━┓ ┃ ┗━┛`   |
+| `rounded`      | `:VBoxR`   | `:VBoxRO`   | `╭─╮ │ ╰─╯`   |
+| `dashed`       | `:VBoxDa`  | `:VBoxDaO`  | `┌┄┐ ┆ └┄┘`   |
+| `dashed_heavy` | `:VBoxHDa` | `:VBoxHDaO` | `┏┅┓ ┊ ┗┅┛`   |
+
+You can also keep a *current* style and switch it from Lua:
+
+```lua
+require("venn").set_style("dashed")  -- single|double|heavy|rounded|dashed|dashed_heavy
+require("venn").cycle_style()        -- switch to the next style, returns its name
+require("venn").get_style()          -- "dashed"
+require("venn").list_styles()        -- { "single", "double", ... }
+```
+
+`:VBoxC` / `:VBoxCO` (and `require("venn").draw_box()` with no argument) draw using
+the current style. The `:VStyle [name]` command sets the style, or cycles to the
+next one when called without an argument.
+
 Key Mapping
 -----------
 

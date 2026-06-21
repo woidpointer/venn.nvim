@@ -115,7 +115,56 @@ local charset = {
   ["  bb"] = "━",
   ["  bb"] = "━",
 }
+
+-- decorations are applied on top of a freshly generated glyph.
+-- only straight runs (dashed) and the four outer corners (rounded)
+-- have dedicated glyphs, junctions keep their solid form.
+local decorations = {
+  rounded = {
+    ["┌"] = "╭", ["┐"] = "╮", ["└"] = "╰", ["┘"] = "╯",
+  },
+  dashed = {
+    ["─"] = "┄", ["│"] = "┆",
+  },
+  dashed_heavy = {
+    ["━"] = "┅", ["┃"] = "┊",
+  },
+}
+
+-- reverse lookup so M.parse can recognise an already decorated glyph
+local undecorate = {}
+for _, map in pairs(decorations) do
+  for base, deco in pairs(map) do
+    undecorate[deco] = base
+  end
+end
+
+-- style name -> { join code (s/d/b), optional decoration }
+local styles = {
+  ["s"]            = { "s" },
+  ["single"]       = { "s" },
+  ["light"]        = { "s" },
+  ["d"]            = { "d" },
+  ["double"]       = { "d" },
+  ["b"]            = { "b" },
+  ["bold"]         = { "b" },
+  ["heavy"]        = { "b" },
+  ["r"]            = { "s", "rounded" },
+  ["rounded"]      = { "s", "rounded" },
+  ["ds"]           = { "s", "dashed" },
+  ["dashed"]       = { "s", "dashed" },
+  ["db"]           = { "b", "dashed_heavy" },
+  ["dashed_heavy"] = { "b", "dashed_heavy" },
+  ["heavy_dashed"] = { "b", "dashed_heavy" },
+}
+
+-- order used by M.cycle_style
+local style_cycle = { "single", "double", "heavy", "rounded", "dashed", "dashed_heavy" }
+
 local M = {}
+
+-- style used by draw functions when no explicit style is passed
+M.current_style = "single"
 function M.log(str)
   if log_filename then
     local f = io.open(log_filename, "a")
@@ -129,7 +178,10 @@ function M.log(str)
 end
 
 function M.draw_box(style)
-  -- line is 1 indexed, col is 0 indexed 
+  local decor
+  style, decor = M.resolve_style(style or M.current_style)
+  M.active_decor = decor
+  -- line is 1 indexed, col is 0 indexed
   local _,slnum,sbyte,vscol = unpack(vim.fn.getpos("'<"))
   local _,elnum,ebyte,vecol = unpack(vim.fn.getpos("'>"))
 
@@ -391,10 +443,11 @@ function M.draw_box(style)
   vim.cmd([[exe "norm! \<C-V>]] .. hori_mvt .. vert_mvt .. [[\<esc>"]])
   M.log("restore cursor position")
 
-  local line = vim.api.nvim_buf_get_lines(0, clnum-1, clnum, true)[1] 
+  local line = vim.api.nvim_buf_get_lines(0, clnum-1, clnum, true)[1]
   local sbyte = M.get_bytes(line, ccol)
   vim.api.nvim_win_set_cursor(0, {clnum, sbyte})
 
+  M.active_decor = nil
 end
 
 function M.get_width(line, byte)
@@ -420,7 +473,10 @@ function M.get_bytes(line, col)
 end
 
 function M.draw_box_over(style)
-  -- line is 1 indexed, col is 0 indexed 
+  local decor
+  style, decor = M.resolve_style(style or M.current_style)
+  M.active_decor = decor
+  -- line is 1 indexed, col is 0 indexed
   local _,slnum,sbyte,vscol = unpack(vim.fn.getpos("'<"))
   local _,elnum,ebyte,vecol = unpack(vim.fn.getpos("'>"))
 
@@ -658,10 +714,11 @@ function M.draw_box_over(style)
   vim.cmd([[exe "norm! \<C-V>]] .. hori_mvt .. vert_mvt .. [[\<esc>"]])
   M.log("restore cursor position")
 
-  local line = vim.api.nvim_buf_get_lines(0, clnum-1, clnum, true)[1] 
+  local line = vim.api.nvim_buf_get_lines(0, clnum-1, clnum, true)[1]
   local sbyte = M.get_bytes(line, ccol)
   vim.api.nvim_win_set_cursor(0, {clnum, sbyte})
 
+  M.active_decor = nil
 end
 
 function M.fill_box()
@@ -733,10 +790,56 @@ function M.set_arrow(dir, new_char)
     print(("venn.nvim: unknown dir for arrow %s!"):format(dir))
   end
 end
+function M.resolve_style(name)
+  local s = styles[name]
+  if not s then
+    return "s", nil
+  end
+  return s[1], s[2]
+end
+
+function M.set_style(name)
+  if not styles[name] then
+    print(("venn.nvim: unknown line style %s!"):format(tostring(name)))
+    return M.current_style
+  end
+  M.current_style = name
+  print("venn.nvim: line style = " .. name)
+  return M.current_style
+end
+
+function M.get_style()
+  return M.current_style
+end
+
+function M.list_styles()
+  return vim.deepcopy(style_cycle)
+end
+
+function M.cycle_style()
+  local idx = 0
+  for i, name in ipairs(style_cycle) do
+    if name == M.current_style then
+      idx = i
+      break
+    end
+  end
+  idx = idx % #style_cycle + 1
+  return M.set_style(style_cycle[idx])
+end
+
 function M.gen(opts)
-  return charset[table.concat(opts, "")]
+  local c = charset[table.concat(opts, "")]
+  if c and M.active_decor then
+    local map = decorations[M.active_decor]
+    if map and map[c] then
+      c = map[c]
+    end
+  end
+  return c
 end
 function M.parse(sym)
+  sym = undecorate[sym] or sym
   for opt, c in pairs(charset) do
     if c == sym then
       return vim.split(opt, "")

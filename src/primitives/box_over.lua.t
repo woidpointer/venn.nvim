@@ -1,6 +1,7 @@
 ##../venn
 @implement+=
 function M.draw_box_over(style)
+  @resolve_active_style
   @get_box_dimensions
   @get_lines_in_range
 
@@ -21,6 +22,7 @@ function M.draw_box_over(style)
 
   @restore_visual_selection
   @restore_cursor_position
+  @clear_active_style
 end
 
 @draw_over_box_top_over+=

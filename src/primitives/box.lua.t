@@ -1,6 +1,7 @@
 ##../venn
 @implement+=
 function M.draw_box(style)
+  @resolve_active_style
   @get_box_dimensions
   @get_lines_in_range
 
@@ -23,7 +24,16 @@ function M.draw_box(style)
 
   @restore_visual_selection
   @restore_cursor_position
+  @clear_active_style
 end
+
+@resolve_active_style+=
+local decor
+style, decor = M.resolve_style(style or M.current_style)
+M.active_decor = decor
+
+@clear_active_style+=
+M.active_decor = nil
 
 @implement+=
 function M.get_width(line, byte)

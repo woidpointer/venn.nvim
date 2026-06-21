@@ -73,8 +73,33 @@ COMMANDS
                 Draw a double line box or arrow.
 
                                                 *:VBoxH*
-:VBoxH          
+:VBoxH
                 Draw a heavy line box or arrow.
+
+                                                *:VBoxR*
+:VBoxR
+                Draw a single line box with rounded
+                corners.
+
+                                                *:VBoxDa*
+:VBoxDa
+                Draw a light dashed line box or arrow.
+
+                                                *:VBoxHDa*
+:VBoxHDa
+                Draw a heavy dashed line box or arrow.
+
+                                                *:VBoxC*
+:VBoxC
+                Draw a box using the currently selected
+                style (see |:VStyle|).
+
+                                                *:VStyle*
+:VStyle [name]
+                Set the current line style to {name}. With
+                no argument, cycle to the next style. Valid
+                names: single, double, heavy, rounded,
+                dashed, dashed_heavy.
 
                                                 *:VBoxO*
 :VBoxO                     
@@ -102,11 +127,66 @@ COMMANDS
                 over.
 
                                                 *:VBoxHO*
-:VBoxHO          
+:VBoxHO
                 Draw a heavy line box or arrow. Draw over.
 
+                                                *:VBoxRO*
+:VBoxRO
+                Draw a rounded corner box. Draw over.
+
+                                                *:VBoxDaO*
+:VBoxDaO
+                Draw a light dashed box or arrow. Draw
+                over.
+
+                                                *:VBoxHDaO*
+:VBoxHDaO
+                Draw a heavy dashed box or arrow. Draw
+                over.
+
+                                                *:VBoxCO*
+:VBoxCO
+                Draw over using the currently selected
+                style (see |:VStyle|).
+
                                                 *:VFill*
-:VFill          
+:VFill
                 Fill the area with a solid color.
+
+======================================================
+
+LUA API                                         *venn-lua-api*
+
+The line style used by the draw functions can be
+switched at runtime from Lua.
+
+venn.set_style({name})                          *venn.set_style()*
+                Set the current line style. Returns the
+                active style name. Valid names: single,
+                double, heavy, rounded, dashed,
+                dashed_heavy (aliases: s, d, b, light,
+                bold, r, ds, db).
+>
+                require"venn".set_style("dashed")
+<
+venn.get_style()                                *venn.get_style()*
+                Return the current line style name.
+
+venn.cycle_style()                              *venn.cycle_style()*
+                Switch to the next style in the cycle and
+                return its name. The cycle order is:
+                single, double, heavy, rounded, dashed,
+                dashed_heavy.
+
+venn.list_styles()                              *venn.list_styles()*
+                Return the list of style names used by
+                |venn.cycle_style()|.
+
+venn.draw_box({style})                          *venn.draw_box()*
+venn.draw_box_over({style})                     *venn.draw_box_over()*
+                Draw a box around / over the current
+                visual selection. {style} is optional; when
+                omitted the current style (see
+                |venn.set_style()|) is used.
 
  vim:tw=58:ts=8:ft=help:norl:

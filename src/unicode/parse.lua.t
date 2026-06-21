@@ -1,6 +1,7 @@
 ##../venn
 @implement+=
 function M.parse(sym)
+  sym = undecorate[sym] or sym
   for opt, c in pairs(charset) do
     if c == sym then
       return vim.split(opt, "")
@@ -125,3 +126,49 @@ local charset = {
   ["  bb"] = "━",
   ["  bb"] = "━",
 }
+
+@script_variables+=
+-- decorations are applied on top of a freshly generated glyph.
+-- only straight runs (dashed) and the four outer corners (rounded)
+-- have dedicated glyphs, junctions keep their solid form.
+local decorations = {
+  rounded = {
+    ["┌"] = "╭", ["┐"] = "╮", ["└"] = "╰", ["┘"] = "╯",
+  },
+  dashed = {
+    ["─"] = "┄", ["│"] = "┆",
+  },
+  dashed_heavy = {
+    ["━"] = "┅", ["┃"] = "┊",
+  },
+}
+
+-- reverse lookup so M.parse can recognise an already decorated glyph
+local undecorate = {}
+for _, map in pairs(decorations) do
+  for base, deco in pairs(map) do
+    undecorate[deco] = base
+  end
+end
+
+-- style name -> { join code (s/d/b), optional decoration }
+local styles = {
+  ["s"]            = { "s" },
+  ["single"]       = { "s" },
+  ["light"]        = { "s" },
+  ["d"]            = { "d" },
+  ["double"]       = { "d" },
+  ["b"]            = { "b" },
+  ["bold"]         = { "b" },
+  ["heavy"]        = { "b" },
+  ["r"]            = { "s", "rounded" },
+  ["rounded"]      = { "s", "rounded" },
+  ["ds"]           = { "s", "dashed" },
+  ["dashed"]       = { "s", "dashed" },
+  ["db"]           = { "b", "dashed_heavy" },
+  ["dashed_heavy"] = { "b", "dashed_heavy" },
+  ["heavy_dashed"] = { "b", "dashed_heavy" },
+}
+
+-- order used by M.cycle_style
+local style_cycle = { "single", "double", "heavy", "rounded", "dashed", "dashed_heavy" }
